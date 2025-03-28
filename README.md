@@ -1,6 +1,8 @@
 # birdsOnIGS
 
-This repository contains the code used to conduct the analysis included in the #Birds On IGS# paper. The repository also includes all data relied on to execute the code. Running the code can be time consuming and may take several hours depending on the computer used to run the code.
+This repository contains the code used to conduct the analysis included in the #Birds On IGS# paper.
+
+Running the code can be time consuming and may take several hours depending on the computer used to run the code.
 
 **Code Structure**
 
