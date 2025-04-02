@@ -2,8 +2,6 @@
 
 This repository contains the code used to conduct the analysis included in the #Birds On IGS# paper.
 
-Running the code can be time consuming and may take several hours depending on the computer used to run the code.
-
 **Code Structure**
 
 The code includes all necessary steps for data processing, model fitting, and prediction.
