@@ -18,4 +18,4 @@ Selecting the appropriate GLMM from the included models.
 Adjusting the ecological input variables used for prediction to match the ecological variable of interest.
 
 **Data availability**
-Access to the data used in the model fitting and prediction process are available at via the following public repository DOI:10.6084/m9.figshare.28711985.
+Access to the data used in the model fitting and prediction process are available upon request at hugh.stanford@rmit.edu.au.
