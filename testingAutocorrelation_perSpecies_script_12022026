@@ -1,0 +1,119 @@
+library(pacman)
+
+p_load(tidyverse, glmmTMB, arrow, DHARMa, sf, mgcv, janitor)
+
+# Prepare data sample -----------------------------------------------------
+
+infile <- "spatial_autocorrelation_testing/"
+
+df <- st_read(
+  file.path(infile,
+            "master_df.gpkg")) 
+
+set.seed(123)
+unique_surveys <- unique(df$chckls_)
+n_surveys <- 10000
+
+sampled_surveys <- sample(unique_surveys, n_surveys)
+df_subset <- df %>% 
+  filter(chckls_ %in% sampled_surveys)
+
+coords <- st_coordinates(df_subset)
+df_subset$x_coord <- coords[, "X"]
+df_subset$y_coord <- coords[, "Y"]
+
+# 2. Run model and test autocorrelation per species --------------------------
+
+species_list <- unique(df_subset$cmmn_nm)
+
+spatial_test_results <- list()
+model_results <- list()
+
+for(i in seq_along(species_list)) {
+  
+  species_name <- species_list[i]
+  
+  df_species <- df_subset %>% 
+    filter(cmmn_nm == species_name)
+  
+  if(sum(df_species$presAbs) < 2) {
+    cat("  Skipping - insufficient presences\n")
+    next
+  }
+  
+  # run model for each species
+  model_fit <- tryCatch({
+    glmmTMB(presAbs ~ land_t +
+              (1 | land_st) +
+              prop_tree +
+              den_dwel +
+              distWater,
+            data = df_species,
+            offset = log(drtn_mn),
+            family = binomial(link = "cloglog"))
+  }, error = function(e) {
+    cat("  Model failed to converge:", e$message, "\n")
+    return(NULL)
+  })
+  
+  if(is.null(model_fit)) next
+  
+  model_results[[as.character(species_name)]] <- model_fit
+  
+  sim_residuals <- tryCatch({
+    simulateResiduals(fittedModel = model_fit, n = 250)
+  }, error = function(e) {
+    cat("  Failed to simulate residuals:", e$message, "\n")
+    return(NULL)
+  })
+  
+  if(is.null(sim_residuals)) next
+  
+  coords_unique <- df_species %>% 
+    group_by(chckls_) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    mutate(
+      x_jitter = x_coord + runif(n(), -1, 1),
+      y_jitter = y_coord + runif(n(), -1, 1)
+    ) %>% 
+    arrange(chckls_)
+  
+  spatial_test <- tryCatch({
+    testSpatialAutocorrelation(sim_residuals,
+                               x = coords_unique$x_jitter,
+                               y = coords_unique$y_jitter)
+  }, error = function(e) {
+    cat("  Spatial test failed:", e$message, "\n")
+    return(NULL)
+  })
+  
+  if(!is.null(spatial_test)) {
+    spatial_test_results[[as.character(species_name)]] <- spatial_test
+    cat("  Moran's I =", spatial_test$statistic, 
+        ", p-value =", spatial_test$p.value, "\n")
+  }
+}
+
+# 3. Summarize results ----------------------------------------------------
+
+results_summary <- data.frame(
+  species = names(spatial_test_results),
+  morans_I_observed = sapply(spatial_test_results, function(x) as.numeric(x$statistic["observed"])),
+  morans_I_expected = sapply(spatial_test_results, function(x) as.numeric(x$statistic["expected"])),
+  morans_I_sd = sapply(spatial_test_results, function(x) as.numeric(x$statistic["sd"])),
+  p_value = sapply(spatial_test_results, function(x) as.numeric(x$p.value)),
+  stringsAsFactors = FALSE
+)
+
+significant_SAC <- results_summary %>% 
+  filter(p_value < 0.05) %>% 
+  arrange(p_value)
+
+omitted_species_names <- setdiff(unique(df$cmmn_nm), unique(results_summary$species))
+
+omitted_species <- df %>% 
+  filter(cmmn_nm %in% omitted_species_names) %>% 
+  group_by(cmmn_nm) %>% 
+  summarise(counts = sum(presAbs)) %>% 
+  ungroup()
