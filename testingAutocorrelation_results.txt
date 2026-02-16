@@ -1,0 +1,25 @@
+Model 1 - (including Foraging guild as ecological variable)
+
+	DHARMa Moran's I test for distance-based autocorrelation
+
+data:  sim_residuals_agg
+observed = 0.2647285, expected = -0.0018797, sd = 0.0288848, p-value < 2.2e-16
+alternative hypothesis: Distance-based autocorrelation
+
+
+Model 2 - (including conservation status as ecological variable)
+
+	DHARMa Moran's I test for distance-based autocorrelation
+
+data:  sim_residuals_agg
+observed = 0.2770833, expected = -0.0018797, sd = 0.0289010, p-value < 2.2e-16
+alternative hypothesis: Distance-based autocorrelation
+
+
+Model 3 - (including foraging domain as ecological variable)
+
+	DHARMa Moran's I test for distance-based autocorrelation
+
+data:  sim_residuals_agg
+observed = 0.2708332, expected = -0.0018797, sd = 0.0293064, p-value < 2.2e-16
+alternative hypothesis: Distance-based autocorrelation
